@@ -18,6 +18,8 @@ sentence-transformers>=2.5.0
 arize-phoenix>=3.0.0
 openinference-instrumentation-llama-index>=2.0.0
 pyjwt>=2.8.0
+streamlit>=1.32.0
+
 
 
 

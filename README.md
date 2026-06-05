@@ -134,6 +134,8 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 Once the server has started, verify the endpoints:
 - **Server Root Info:** http://localhost:8000/
 - **Health Check:** http://localhost:8000/health
+- **Conversational Agent Chat:** `POST http://localhost:8000/agent/chat`
+- **Authentication Token:** `POST http://localhost:8000/auth/token`
 - **Interactive Swagger Documentation:** http://localhost:8000/docs
 - **Redoc Documentation:** http://localhost:8000/redoc
 
@@ -192,6 +194,52 @@ We enforce strict quality standards using LlamaIndex's LLM-as-a-judge system bef
   ```
   *(Requires average scores of at least `0.80` to pass, otherwise exits with error code `1`)*
 - **GitHub Actions Integration**: On pushes to `main`, GHA spins up Qdrant in Docker, runs the pipeline sync, evaluates the quality gate, and compiles the production multi-stage Docker image on success.
+
+---
+
+## 🖥️ Streamlit Frontend Dashboard
+
+We provide a beautiful, native Streamlit chat interface to interact with the Agentic conversational RAG backend.
+
+- **Security Sidebar**: Generates JWT access tokens dynamically. Toggle between different roles (`admin`, `engineering`, `hr`, `public`) to observe active RBAC database-level document filtering.
+- **Detailed Citations**: Review expandable drop-downs showing exactly which source file and chunk content were used by the agent.
+- **Latency Tracking**: View latency execution timings for every query.
+- **Run Frontend**:
+  ```bash
+  streamlit run app.py
+  ```
+
+---
+
+## 🪵 Human-in-the-Loop (HITL) Fallback Logging
+
+If the system cannot retrieve relevant content, or if the LLM states it cannot confidently formulate an answer, it triggers a graceful fallback: *"I cannot confidently find this in the current knowledge base."*
+
+All such queries are automatically logged into **[logs/unanswered_queries.json](file:///C:/Users/Thinkpad/Desktop/projects/askdocs-rag/logs/unanswered_queries.json)**. Administrators can audit this JSON file to see what missing documentation needs to be uploaded next.
+
+---
+
+## ⚙️ Running Frontend & Backend Concurrently
+
+Follow this blueprint to boot both local services:
+
+1.  **Ensure Docker Qdrant is Running**:
+    ```bash
+    docker compose up -d
+    ```
+2.  **Synchronize/Index Documents**:
+    ```bash
+    python sync.py
+    ```
+3.  **Run FastAPI Backend API**:
+    ```bash
+    python app/main.py
+    ```
+4.  **Run Streamlit Frontend UI (in a separate terminal)**:
+    ```bash
+    streamlit run app.py
+    ```
+
 
 
 

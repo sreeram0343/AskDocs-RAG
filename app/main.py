@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from app.core.config import settings
-from app.api.routes import health, ask, evaluate, auth
+from app.api.routes import health, ask, evaluate, auth, agent
 from app.services.observability import setup_observability
 
 # Setup global OpenTelemetry/Arize Phoenix observability tracing
@@ -42,6 +42,7 @@ app.include_router(health.router)
 app.include_router(ask.router)
 app.include_router(evaluate.router)
 app.include_router(auth.router)
+app.include_router(agent.router)
 
 @app.get("/", tags=["root"])
 async def root():
