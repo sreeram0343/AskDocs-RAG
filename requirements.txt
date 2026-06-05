@@ -15,4 +15,7 @@ llama-index-postprocessor-sbert-rerank>=0.1.0
 fastembed>=0.2.0
 pypdf>=4.0.0
 sentence-transformers>=2.5.0
+arize-phoenix>=3.0.0
+openinference-instrumentation-llama-index>=2.0.0
+
 

@@ -17,3 +17,6 @@ class SourceNode(BaseModel):
 class QueryResponse(BaseModel):
     answer: str = Field(..., description="The generated answer from LLM with inline citations")
     sources: List[SourceNode] = Field(default_factory=list, description="List of source document chunks used to answer the query")
+    execution_time_ms: float = Field(..., description="End-to-end processing execution time in milliseconds")
+    cache_hit: bool = Field(..., description="True if the response was retrieved from the semantic cache")
+
