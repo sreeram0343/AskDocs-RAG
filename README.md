@@ -136,3 +136,17 @@ Once the server has started, verify the endpoints:
 - **Health Check:** http://localhost:8000/health
 - **Interactive Swagger Documentation:** http://localhost:8000/docs
 - **Redoc Documentation:** http://localhost:8000/redoc
+
+---
+
+## 🔄 Incremental Sync Pipeline
+
+The project features a hash-based incremental syncing system that calculates MD5 checksums of files under the `data/` directory to manage Qdrant vectors efficiently.
+
+- **Trigger Syncing**: Run the syncing CLI script:
+  ```bash
+  python sync.py
+  ```
+- **Tracking Log**: The system records the indexing state in `storage/sync_state.json`, including the associated file hash and mapped Qdrant node UUIDs.
+- **Auto Cleanup**: Deleting or modifying a local file will automatically trigger the deletion of the old point vectors from your Qdrant collection during the next sync run.
+
