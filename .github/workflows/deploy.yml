@@ -1,0 +1,61 @@
+name: CI/CD Quality Gate & Docker Build
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  evaluate-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Setup Mock Environment Variables
+      run: |
+        echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> $GITHUB_ENV
+        echo "QDRANT_URL=http://localhost:6333" >> $GITHUB_ENV
+        echo "LOG_LEVEL=INFO" >> $GITHUB_ENV
+        echo "JWT_SECRET_KEY=${{ secrets.JWT_SECRET_KEY }}" >> $GITHUB_ENV
+
+    - name: Spin up local Qdrant for Evaluation
+      run: |
+        docker run -d -p 6333:6333 -p 6334:6334 qdrant/qdrant:latest
+        # Give Qdrant container a few seconds to start
+        sleep 5
+
+    - name: Seed Evaluation Data (Public, HR, Engineering folders)
+      run: |
+        mkdir -p data/hr data/engineering
+        # Populate test information matching the evaluate.py test queries
+        echo "Initialize QdrantVectorStore with enable_hybrid=True to configure hybrid search." > data/hr/hybrid.md
+        echo "Qdrant runs locally using Docker on port 6333 (HTTP) and 6334 (gRPC) with volume mapping to ./qdrant_storage." > data/qdrant.md
+        echo "Phase 1 configuration uses text-embedding-3-small for embeddings and gpt-4o-mini for the LLM." > data/phase1.md
+        echo "The endpoint to verify API server health is /health." > data/health.md
+        echo "Run the data ingestion and indexing pipeline using python ingest.py." > data/engineering/pipeline.md
+        
+        # Load and index documents
+        python ingest.py
+
+    - name: Run Quality Gate Evaluation Pipeline
+      run: |
+        # This CLI script evaluates RAG faithfulness & relevancy. 
+        # It returns code 0 on success (>=0.80), and code 1 on failure.
+        python evaluate.py
+
+    - name: Build Production Docker Image
+      if: success()
+      run: |
+        docker build -t askdocs-rag-api:latest .

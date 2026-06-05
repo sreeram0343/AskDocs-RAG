@@ -3,28 +3,53 @@ from typing import List
 from llama_index.core.schema import NodeWithScore
 from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.postprocessor.sbert_rerank import SentenceTransformerRerank
+from llama_index.core.vector_stores import MetadataFilter, MetadataFilters, FilterCondition, FilterOperator
 from app.services.database import get_existing_index
 
 logger = logging.getLogger("askdocs-rag.services.retriever")
 
-def retrieve_relevant_nodes(query: str, similarity_top_k: int = 15, rerank_top_n: int = 5) -> List[NodeWithScore]:
+def retrieve_relevant_nodes(
+    query: str, 
+    role: str = "public", 
+    similarity_top_k: int = 15, 
+    rerank_top_n: int = 5
+) -> List[NodeWithScore]:
     """
     Advanced retrieval pipeline:
-    1. Fetches the top similarity_top_k (default 15) nodes from Qdrant using Hybrid Search.
-    2. Reranks the retrieved nodes down to rerank_top_n (default 5) using the BAAI/bge-reranker-base model.
+    1. Builds dynamic metadata filters depending on user role (RBAC).
+    2. Fetches the top similarity_top_k (default 15) nodes from Qdrant using Hybrid Search.
+    3. Reranks the retrieved nodes down to rerank_top_n (default 5) using the BAAI/bge-reranker-base model.
     """
-    logger.info(f"Initiating advanced retrieval for query: '{query}'")
+    logger.info(f"Initiating advanced retrieval for query: '{query}' | User Role: '{role}'")
     
     try:
         # Load the existing index referencing our Qdrant vector store
         index = get_existing_index()
         
-        # Configure retriever for hybrid query mode (dense + sparse search)
+        # Build allowed roles lists
+        allowed_roles = ["public"]
+        if role == "admin":
+            allowed_roles = ["public", "admin", "hr", "engineering"]
+        elif role in ("hr", "engineering"):
+            allowed_roles.append(role)
+            
+        # Construct MetadataFilters container using OR condition so we match any allowed roles
+        filters_list = [
+            MetadataFilter(key="required_role", value=r, operator=FilterOperator.EQ)
+            for r in allowed_roles
+        ]
+        metadata_filters = MetadataFilters(
+            filters=filters_list,
+            condition=FilterCondition.OR
+        )
+        
+        # Configure retriever for hybrid query mode (dense + sparse search) with RBAC filters
         retriever = VectorIndexRetriever(
             index=index,
             similarity_top_k=similarity_top_k,
             vector_store_query_mode="hybrid",
-            alpha=0.5  # Balanced weight between vector (dense) and BM25 (sparse) searches
+            alpha=0.5,  # Balanced weight between vector (dense) and BM25 (sparse) searches
+            filters=metadata_filters
         )
         
         # Retrieve the top 15 initial raw results

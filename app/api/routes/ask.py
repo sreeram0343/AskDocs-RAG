@@ -1,20 +1,24 @@
 import time
 import logging
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from app.models.schemas import QueryRequest, QueryResponse
 from app.services.retriever import retrieve_relevant_nodes
 from app.services.generator import generate_answer_with_citations
 from app.services.cache_config import semantic_cache
+from app.services.auth import get_current_user
 
 router = APIRouter()
 logger = logging.getLogger("askdocs-rag.api.ask")
 
 @router.post("/ask", response_model=QueryResponse, status_code=status.HTTP_200_OK, tags=["query"])
-async def ask_question(request: QueryRequest):
+async def ask_question(
+    request: QueryRequest,
+    current_user: dict = Depends(get_current_user)
+):
     """
     RAG Query Pipeline:
     1. Checks the semantic cache for highly similar queries.
-    2. If miss, triggers Hybrid Search in Qdrant (top 15 results).
+    2. If miss, triggers Hybrid Search in Qdrant (top 15 results), filtering by RBAC user role.
     3. Reranks nodes down to 5 using BAAI/bge-reranker-base.
     4. Prompts gpt-4o-mini to generate an answer backed strictly by the contexts with inline source citations.
     5. Caches the response and returns payload with execution latency.
@@ -26,7 +30,7 @@ async def ask_question(request: QueryRequest):
             detail="Query string cannot be empty."
         )
         
-    logger.info(f"Processing query request: '{query}'")
+    logger.info(f"Processing query request from user '{current_user['username']}' (role: {current_user['role']}): '{query}'")
     start_time = time.perf_counter()
     
     try:
@@ -41,8 +45,8 @@ async def ask_question(request: QueryRequest):
                 cache_hit=True
             )
             
-        # Step 2 & 3: Retrieve the top semantically relevant nodes and rerank them
-        nodes = retrieve_relevant_nodes(query)
+        # Step 2 & 3: Retrieve the top semantically relevant nodes and rerank them (passing RBAC role filter)
+        nodes = retrieve_relevant_nodes(query, role=current_user["role"])
         
         # Step 4: Call LLM to generate the answer with citations
         result = generate_answer_with_citations(query, nodes)
