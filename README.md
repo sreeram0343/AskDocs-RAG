@@ -179,5 +179,20 @@ This project enforces Role-Based Access Control (RBAC) on the `/ask` endpoint to
   - Documents under `data/engineering/` require the `engineering` or `admin` role.
   - Root documents are `public` and accessible by all roles.
 
+---
+
+## 🧪 CI/CD Quality Gates & Automated Evaluations
+
+We enforce strict quality standards using LlamaIndex's LLM-as-a-judge system before deploying.
+
+- **Quality Metrics**: Checks `Faithfulness` (hallucination checks) and `Relevancy` (answer matching query and contexts).
+- **Run Evaluations Locally**: Execute the CLI evaluator:
+  ```bash
+  python evaluate.py
+  ```
+  *(Requires average scores of at least `0.80` to pass, otherwise exits with error code `1`)*
+- **GitHub Actions Integration**: On pushes to `main`, GHA spins up Qdrant in Docker, runs the pipeline sync, evaluates the quality gate, and compiles the production multi-stage Docker image on success.
+
+
 
 
