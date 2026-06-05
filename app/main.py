@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from app.core.config import settings
-from app.api.routes import health
+from app.api.routes import health, ask
 
 # Configure logging
 logging.basicConfig(
@@ -35,6 +35,7 @@ app.add_middleware(
 
 # Include Routers
 app.include_router(health.router)
+app.include_router(ask.router)
 
 @app.get("/", tags=["root"])
 async def root():
