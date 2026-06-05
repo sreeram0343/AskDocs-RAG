@@ -160,4 +160,24 @@ We utilize OpenTelemetry and **Arize Phoenix** to monitor and capture the RAG ex
 - **View Dashboard**: Open your browser at http://localhost:6006 to explore the tracing dashboard.
 - **Trace Metrics**: Automatically logs latency timelines, retrieval segments, token metrics, context chunks sent to the LLM, and output responses.
 
+---
+
+## 🔒 JWT Authentication & RBAC Filters
+
+This project enforces Role-Based Access Control (RBAC) on the `/ask` endpoint to prevent data leaks.
+
+- **Get a Token**: Send a POST request to `/auth/token` with a JSON body:
+  ```json
+  {
+    "username": "sreeram",
+    "role": "engineering"
+  }
+  ```
+  *(Supported roles: `admin`, `engineering`, `hr`, `public`)*
+- **Metadata Filters**: Chunks are automatically filtered in Qdrant based on folders:
+  - Documents under `data/hr/` require the `hr` or `admin` role.
+  - Documents under `data/engineering/` require the `engineering` or `admin` role.
+  - Root documents are `public` and accessible by all roles.
+
+
 
