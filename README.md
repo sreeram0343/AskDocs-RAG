@@ -150,3 +150,14 @@ The project features a hash-based incremental syncing system that calculates MD5
 - **Tracking Log**: The system records the indexing state in `storage/sync_state.json`, including the associated file hash and mapped Qdrant node UUIDs.
 - **Auto Cleanup**: Deleting or modifying a local file will automatically trigger the deletion of the old point vectors from your Qdrant collection during the next sync run.
 
+---
+
+## 🛰️ Observability & Tracing Dashboard
+
+We utilize OpenTelemetry and **Arize Phoenix** to monitor and capture the RAG execution graphs.
+
+- **Enable Observability**: Set `PHOENIX_ENABLE=true` in your `.env`.
+- **View Dashboard**: Open your browser at http://localhost:6006 to explore the tracing dashboard.
+- **Trace Metrics**: Automatically logs latency timelines, retrieval segments, token metrics, context chunks sent to the LLM, and output responses.
+
+
